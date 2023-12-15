@@ -2,7 +2,7 @@ open Interpreter
 open Result
 
 let run_interpreter inp =
-  let ret = Result.bind (Scanner.scan inp) Parser.parse in
+  let ret = Parser.parse inp in
   match ret with
   | Ok p -> Evaluator.interpret p
   | Error e -> print_endline ("ERROR: " ^ e)

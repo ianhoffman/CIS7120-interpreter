@@ -1,8 +1,4 @@
-(** The scanner transforms raw input into a list of tokens. 
-    
-If performance were a concern, we'd scan incrementally (on-demand, when the parser
-asks for a token, and not before), but since input is small scanning everything at
-once seemed easier. *)
+(** Scan raw input and return a token *)
 
 open Result
 
@@ -78,34 +74,34 @@ let rec scan_id scanner curr =
       | _ -> (scanner, curr))
   | _ -> (scanner, curr)
 
-let rec scan_inner tokens scanner =
+let scan scanner =
   let scanner = skip_whitespace scanner in
   match scanner.input with
-  | [] -> ok tokens
+  | [] -> ok None
   | h :: t -> (
-      let add_token tok rest =
-        scan_inner (tokens @ [ (tok, scanner.line, scanner.pos) ]) rest
+      let make_token tok rest =
+        ok (Some ((tok, scanner.line, scanner.pos), rest))
       in
-      let add_single_token tok =
-        add_token tok { input = t; pos = scanner.pos + 1; line = scanner.line }
+      let make_token_simple tok =
+        make_token tok { input = t; pos = scanner.pos + 1; line = scanner.line }
       in
       match h with
-      | '(' -> add_single_token OpenParens
-      | ')' -> add_single_token CloseParens
-      | '+' -> add_single_token Plus
-      | '-' -> add_single_token Minus
-      | '*' -> add_single_token Mult
-      | '=' -> add_single_token Equals
-      | ';' -> add_single_token Semicolon
+      | '(' -> make_token_simple OpenParens
+      | ')' -> make_token_simple CloseParens
+      | '+' -> make_token_simple Plus
+      | '-' -> make_token_simple Minus
+      | '*' -> make_token_simple Mult
+      | '=' -> make_token_simple Equals
+      | ';' -> make_token_simple Semicolon
       | '0' .. '9' ->
           let r, n = scan_int scanner in
-          add_token (Integer n) r
+          make_token (Integer n) r
       | 'a' .. 'z' | 'A' .. 'Z' | '_' ->
           let r, id = scan_id scanner "" in
-          add_token (Identifier id) r
+          make_token (Identifier id) r
       | _ ->
           error
             ("invalid_character (line=" ^ string_of_int scanner.line ^ ", pos="
            ^ string_of_int scanner.pos ^ ")"))
-
-let scan inp = scan_inner [] { input = string_to_list inp; pos = 0; line = 0 }
+(*
+   let scan inp = scan_inner [] { input = string_to_list inp; pos = 0; line = 0 } *)
